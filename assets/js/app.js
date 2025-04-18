@@ -411,7 +411,6 @@ function change_montage_through_num(num) {
             $("#montage").data('plotMontage', 1);
             readEEG();
         };
-
     }
 }
 
