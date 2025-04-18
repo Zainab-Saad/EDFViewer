@@ -29,7 +29,7 @@ $('.amp50s').data('amplitudeCalibration', 50);
 $('.amp100s').data('amplitudeCalibration', 100);
 $('#amp').data('amplitudeCalibration', 5);
 $('#GO').data('tab', 1);
-$('#montage').data('montageCode', 'm1');
+$('#montage').data('montageCode', 'm6');
 $('.Montage1').data('montageNum', 1);
 $('.Montage2').data('montageNum', 2);
 $('.Montage3').data('montageNum', 3);
@@ -403,10 +403,10 @@ document.onkeydown = function(e) {
 
 function change_montage_through_num(num) {
     if (edf.montageEdit != 1) {
-        $('#general_montage_num').text(num);
-        $('#montage_modal_txt').text(' Montage ' + num);
-        $('#montage').data('montageCode', 'm' + num);
-        $('.Montage' + num).prop("checked", true);
+        $('#general_montage_num').text('6');
+        $('#montage_modal_txt').text(' Montage 6');
+        $('#montage').data('montageCode', 'm6');
+        $('.Montage' + '6').prop("checked", true);
         if (edf.fileName) {
             $("#montage").data('plotMontage', 1);
             readEEG();
