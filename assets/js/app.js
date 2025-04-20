@@ -29,7 +29,7 @@ $('.amp50s').data('amplitudeCalibration', 50);
 $('.amp100s').data('amplitudeCalibration', 100);
 $('#amp').data('amplitudeCalibration', 5);
 $('#GO').data('tab', 1);
-$('#montage').data('montageCode', 'm1');
+$('#montage').data('montageCode', 'm6');
 $('.Montage1').data('montageNum', 1);
 $('.Montage2').data('montageNum', 2);
 $('.Montage3').data('montageNum', 3);
@@ -403,15 +403,14 @@ document.onkeydown = function(e) {
 
 function change_montage_through_num(num) {
     if (edf.montageEdit != 1) {
-        $('#general_montage_num').text(num);
-        $('#montage_modal_txt').text(' Montage ' + num);
-        $('#montage').data('montageCode', 'm' + num);
-        $('.Montage' + num).prop("checked", true);
+        $('#general_montage_num').text('6');
+        $('#montage_modal_txt').text(' Montage 6');
+        $('#montage').data('montageCode', 'm6');
+        $('.Montage' + '6').prop("checked", true);
         if (edf.fileName) {
             $("#montage").data('plotMontage', 1);
             readEEG();
         };
-
     }
 }
 
@@ -653,10 +652,229 @@ function previousPage() {
     } catch (err) {};
 }
 
+// this was the origina function of the EDFViewer...
+// function analysis_header(e) {
+//     if (!e.target.files[0]) {
+//         return;
+//     };
+//     ch_dic = {};
+//     edf = {};
+//     edf.fileName = e.target.files[0];
+
+//     $("#EEGMontage").data('ch1', null);
+//     $("#EEGMontage").data('ch2', null);
+//     $("#EKGMontage").data('ch1', null);
+//     $("#EKGMontage").data('ch2', null);
+//     $("#OtherMontage").data('ch1', null);
+//     $("#OtherMontage").data('ch2', null);
+//     $("#EEGDiv").remove();
+//     $("#EKGDiv").remove();
+//     $("#otherDiv").remove();
+//     $('.ChDiv').remove();
+//     $("#UpperTimeMarkDiv").remove();
+//     $("#LowerTimeMarkDiv").remove();
+//     $('#EEGchName').css('height', 0);
+//     $('#EKGchName').css('height', 0);
+//     $('#otherchName').css('height', 0);
+//     $('#UpperTimeMarkName').css('height', 0);
+//     $('#LowerTimeMarkName').css('height', 0);
+//     $('.RowTwoPlot').css('visibility', 'hidden');
+//     $('.FirstCol').css('borderRightWidth', 0);
+//     $('.SecondCol').css('borderRightWidth', 0);
+//     $("#montage").data('plotMontage', 1);
+//     $('#SearchInput').val('');
+
+//     read_Header()
+//         .then(Analysis_Header_First_Section)
+//         .then(Analysis_Header_Second_Section)
+//         .then(ReadAnnotatons);
+// }
+
+
+// this implementation was done so that EEG file is analyzed/sent to backend to get prediction immediately after uploading
+// function analysis_header(e) {
+//     if (!e.target.files[0]) {
+//         return;
+//     };
+    
+//     // Show loading indicator
+//     $("body").css("cursor", "progress");
+//     $("#loadingIndicator").show();
+    
+//     // Create FormData object to send the file
+//     var formData = new FormData();
+//     formData.append('file', e.target.files[0]);
+    
+//     // Make API call to your Flask endpoint
+//     fetch('http://localhost:5000/predict', {
+//         method: 'POST',
+//         body: formData,
+//         mode: 'cors'
+//     })
+//     .then(response => {
+//         if (!response.ok) {
+//             throw new Error('Network response was not ok');
+//         }
+//         return response.json();
+//     })
+//     .then(data => {
+//         // Handle the prediction response
+//         console.log('Prediction:', data);
+        
+//         // Show prediction result to user
+//         if (data.status === 'success') {
+//             var predictionText = data.prediction === 1 ? 'Abnormal EEG detected' : 'Normal EEG detected';
+//             $('#predictionResult').text(predictionText).css({
+//                 'color': data.prediction === 1 ? 'red' : 'green',
+//                 'font-weight': 'bold'
+//             }).show();
+//         } else {
+//             $('#predictionResult').text('Error getting prediction: ' + (data.error || 'Unknown error')).css({
+//                 'color': 'orange'
+//             }).show();
+//         }
+        
+//         // Continue with original file processing
+//         processFile(e);
+//     })
+//     .catch(error => {
+//         console.error('Error:', error);
+//         $('#predictionResult').text('Failed to get prediction: ' + error.message).css({
+//             'color': 'red'
+//         }).show();
+        
+//         // Continue with original file processing even if prediction failed
+//         processFile(e);
+//     })
+//     .finally(() => {
+//         $("body").css("cursor", "default");
+//         $("#loadingIndicator").hide();
+//     });
+// }
+
+// function processFile(e) {
+//     // Original file processing code from analysis_header
+//     ch_dic = {};
+//     edf = {};
+//     edf.fileName = e.target.files[0];
+
+//     $("#EEGMontage").data('ch1', null);
+//     $("#EEGMontage").data('ch2', null);
+//     $("#EKGMontage").data('ch1', null);
+//     $("#EKGMontage").data('ch2', null);
+//     $("#OtherMontage").data('ch1', null);
+//     $("#OtherMontage").data('ch2', null);
+//     $("#EEGDiv").remove();
+//     $("#EKGDiv").remove();
+//     $("#otherDiv").remove();
+//     $('.ChDiv').remove();
+//     $("#UpperTimeMarkDiv").remove();
+//     $("#LowerTimeMarkDiv").remove();
+//     $('#EEGchName').css('height', 0);
+//     $('#EKGchName').css('height', 0);
+//     $('#otherchName').css('height', 0);
+//     $('#UpperTimeMarkName').css('height', 0);
+//     $('#LowerTimeMarkName').css('height', 0);
+//     $('.RowTwoPlot').css('visibility', 'hidden');
+//     $('.FirstCol').css('borderRightWidth', 0);
+//     $('.SecondCol').css('borderRightWidth', 0);
+//     $("#montage").data('plotMontage', 1);
+//     $('#SearchInput').val('');
+
+//     read_Header()
+//         .then(Analysis_Header_First_Section)
+//         .then(Analysis_Header_Second_Section)
+//         .then(ReadAnnotatons);
+// }
+
+
+// Global variable to store the uploaded file
+var currentUploadedFile = null;
+
 function analysis_header(e) {
     if (!e.target.files[0]) {
         return;
     };
+    
+    // Store the uploaded file
+    currentUploadedFile = e.target.files[0];
+    
+    // Show the prediction button
+    $('#predictionButton').show();
+    
+    // Process the file for display
+    processFile(e);
+}
+
+// New function to handle prediction button click
+function getModelPrediction() {
+    if (!currentUploadedFile) {
+        alert('Please upload an EEG file first');
+        return;
+    }
+    
+    // Show loading indicator
+    $("body").css("cursor", "progress");
+    $("#loadingIndicator").show();
+    
+    // Create FormData object to send the file
+    var formData = new FormData();
+    formData.append('file', currentUploadedFile);
+    
+    // Make API call to your Flask endpoint
+    fetch('http://localhost:5000/predict', {
+        method: 'POST',
+        body: formData,
+        mode: 'cors'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Handle the prediction response
+        console.log('Prediction:', data);
+        
+        // Show prediction in popup
+        showPredictionPopup(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPredictionPopup({
+            status: 'error',
+            error: error.message
+        });
+    })
+    .finally(() => {
+        $("body").css("cursor", "default");
+        $("#loadingIndicator").hide();
+    });
+}
+
+// Function to show prediction in a popup
+function showPredictionPopup(data) {
+    // Create or update popup content
+    var popupContent = $('#predictionPopupContent');
+    
+    if (data.status === 'success') {
+        var predictionText = data.prediction === 1 ? 
+            '<span style="color:red; font-weight:bold;">Abnormal EEG detected</span>' : 
+            '<span style="color:green; font-weight:bold;">Normal EEG detected</span>';
+        popupContent.html('<h3>Model Prediction</h3>' + predictionText);
+    } else {
+        popupContent.html('<h3>Error</h3><p style="color:orange;">' + 
+                         (data.error || 'Unknown error') + '</p>');
+    }
+    
+    // Show the popup
+    $('#predictionPopup').fadeIn();
+}
+
+// Function to process file for display (unchanged)
+function processFile(e) {
+    // Original file processing code...
     ch_dic = {};
     edf = {};
     edf.fileName = e.target.files[0];
