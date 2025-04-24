@@ -822,7 +822,7 @@ function getModelPrediction() {
     formData.append('file', currentUploadedFile);
     
     // Make API call to your Flask endpoint
-    fetch('http://localhost:5000/predict', {
+    fetch('http://localhost:5000/predict-explain', {
         method: 'POST',
         body: formData,
         mode: 'cors'
@@ -862,7 +862,35 @@ function showPredictionPopup(data) {
         var predictionText = data.prediction === 1 ? 
             '<span style="color:red; font-weight:bold;">Abnormal EEG detected</span>' : 
             '<span style="color:green; font-weight:bold;">Normal EEG detected</span>';
-        popupContent.html('<h3>Model Prediction</h3>' + predictionText);
+        
+        // Create table for conceptual sensitivities
+        var sensitivityTable = '<h4>Conceptual Sensitivities</h4><table style="width:100%; border-collapse:collapse;">';
+        sensitivityTable += '<tr><th style="border:1px solid #ddd; padding:8px; text-align:left;">Concept</th>' +
+                           '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Mean</th>' +
+                           '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Std</th></tr>';
+        
+        // Add each concept to the table
+        for (var concept in data.conceptual_sensitivities) {
+            if (data.conceptual_sensitivities.hasOwnProperty(concept)) {
+                var mean = data.conceptual_sensitivities[concept].mean.toFixed(4);
+                var std = data.conceptual_sensitivities[concept].std.toFixed(4);
+                
+                // Color code based on mean value (positive/negative)
+                var meanColor = mean >= 0 ? 'red' : 'green';
+                
+                sensitivityTable += '<tr>' +
+                                   '<td style="border:1px solid #ddd; padding:8px;">' + concept + '</td>' +
+                                   '<td style="border:1px solid #ddd; padding:8px; color:' + meanColor + ';">' + mean + '</td>' +
+                                   '<td style="border:1px solid #ddd; padding:8px;">' + std + '</td>' +
+                                   '</tr>';
+            }
+        }
+        
+        sensitivityTable += '</table>';
+        
+        // Combine all content
+        var fullContent = '<h3>Model Prediction</h3>' + predictionText + '<br><br>' + sensitivityTable;
+        popupContent.html(fullContent);
     } else {
         popupContent.html('<h3>Error</h3><p style="color:orange;">' + 
                          (data.error || 'Unknown error') + '</p>');
