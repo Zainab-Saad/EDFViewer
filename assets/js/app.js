@@ -44,6 +44,8 @@ $('#setting_CNW_slider').data('position', 0);
 var ch_dic = {};
 var edf = {};
 
+const doc = new window.jspdf.jsPDF();
+
 var montage = {
     'm1': {
         'EEG': [],
@@ -193,6 +195,10 @@ $('.seconds').on('input', function() {
 $('#GO').click(function() {
     jumpto_modal_go_activate();
 
+});
+
+$('#generateReportBtn').click(function() {
+    generateReport();
 });
 
 function jumpto_modal_go_activate() {
@@ -804,6 +810,16 @@ function analysis_header(e) {
     
     // Process the file for display
     processFile(e);
+
+    read_Header()
+        .then(Analysis_Header_First_Section)
+        .then(Analysis_Header_Second_Section)
+        .then(ReadAnnotatons)
+        .then(function() {
+            // Show the button when everything is loaded
+            $('#generateReportBtn').show();
+        });
+
 }
 
 // New function to handle prediction button click
@@ -822,7 +838,7 @@ function getModelPrediction() {
     formData.append('file', currentUploadedFile);
     
     // Make API call to your Flask endpoint
-    fetch('http://localhost:5000/predict-explain', {
+    fetch('http://localhost:5000/predict', {
         method: 'POST',
         body: formData,
         mode: 'cors'
@@ -853,7 +869,53 @@ function getModelPrediction() {
     });
 }
 
-// Function to show prediction in a popup
+// // Function to show prediction in a popup -- previous function that displayed the prediction and conc sens 
+// function showPredictionPopup(data) {
+//     // Create or update popup content
+//     var popupContent = $('#predictionPopupContent');
+    
+//     if (data.status === 'success') {
+//         var predictionText = data.prediction === 1 ? 
+//             '<span style="color:red; font-weight:bold;">Abnormal EEG detected</span>' : 
+//             '<span style="color:green; font-weight:bold;">Normal EEG detected</span>';
+        
+//         // Create table for conceptual sensitivities
+//         var sensitivityTable = '<h4>Conceptual Sensitivities</h4><table style="width:100%; border-collapse:collapse;">';
+//         sensitivityTable += '<tr><th style="border:1px solid #ddd; padding:8px; text-align:left;">Concept</th>' +
+//                            '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Mean</th>' +
+//                            '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Std</th></tr>';
+        
+//         // Add each concept to the table
+//         for (var concept in data.conceptual_sensitivities) {
+//             if (data.conceptual_sensitivities.hasOwnProperty(concept)) {
+//                 var mean = data.conceptual_sensitivities[concept].mean.toFixed(4);
+//                 var std = data.conceptual_sensitivities[concept].std.toFixed(4);
+                
+//                 // Color code based on mean value (positive/negative)
+//                 var meanColor = mean >= 0 ? 'red' : 'green';
+                
+//                 sensitivityTable += '<tr>' +
+//                                    '<td style="border:1px solid #ddd; padding:8px;">' + concept + '</td>' +
+//                                    '<td style="border:1px solid #ddd; padding:8px; color:' + meanColor + ';">' + mean + '</td>' +
+//                                    '<td style="border:1px solid #ddd; padding:8px;">' + std + '</td>' +
+//                                    '</tr>';
+//             }
+//         }
+        
+//         sensitivityTable += '</table>';
+        
+//         // Combine all content
+//         var fullContent = '<h3>Model Prediction</h3>' + predictionText + '<br><br>' + sensitivityTable;
+//         popupContent.html(fullContent);
+//     } else {
+//         popupContent.html('<h3>Error</h3><p style="color:orange;">' + 
+//                          (data.error || 'Unknown error') + '</p>');
+//     }
+    
+//     // Show the popup
+//     $('#predictionPopup').fadeIn();
+// }
+
 function showPredictionPopup(data) {
     // Create or update popup content
     var popupContent = $('#predictionPopupContent');
@@ -863,34 +925,7 @@ function showPredictionPopup(data) {
             '<span style="color:red; font-weight:bold;">Abnormal EEG detected</span>' : 
             '<span style="color:green; font-weight:bold;">Normal EEG detected</span>';
         
-        // Create table for conceptual sensitivities
-        var sensitivityTable = '<h4>Conceptual Sensitivities</h4><table style="width:100%; border-collapse:collapse;">';
-        sensitivityTable += '<tr><th style="border:1px solid #ddd; padding:8px; text-align:left;">Concept</th>' +
-                           '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Mean</th>' +
-                           '<th style="border:1px solid #ddd; padding:8px; text-align:left;">Std</th></tr>';
-        
-        // Add each concept to the table
-        for (var concept in data.conceptual_sensitivities) {
-            if (data.conceptual_sensitivities.hasOwnProperty(concept)) {
-                var mean = data.conceptual_sensitivities[concept].mean.toFixed(4);
-                var std = data.conceptual_sensitivities[concept].std.toFixed(4);
-                
-                // Color code based on mean value (positive/negative)
-                var meanColor = mean >= 0 ? 'red' : 'green';
-                
-                sensitivityTable += '<tr>' +
-                                   '<td style="border:1px solid #ddd; padding:8px;">' + concept + '</td>' +
-                                   '<td style="border:1px solid #ddd; padding:8px; color:' + meanColor + ';">' + mean + '</td>' +
-                                   '<td style="border:1px solid #ddd; padding:8px;">' + std + '</td>' +
-                                   '</tr>';
-            }
-        }
-        
-        sensitivityTable += '</table>';
-        
-        // Combine all content
-        var fullContent = '<h3>Model Prediction</h3>' + predictionText + '<br><br>' + sensitivityTable;
-        popupContent.html(fullContent);
+        popupContent.html(predictionText);
     } else {
         popupContent.html('<h3>Error</h3><p style="color:orange;">' + 
                          (data.error || 'Unknown error') + '</p>');
@@ -898,6 +933,431 @@ function showPredictionPopup(data) {
     
     // Show the popup
     $('#predictionPopup').fadeIn();
+}
+
+// function generateReport() {
+//     // Create HTML content for the modal
+//     let reportHTML = `
+//         <div style="font-family: Arial, sans-serif;">
+//             <h2 style="color: #337ab7;">EEG Analysis Report</h2>
+//             <hr>
+//             <h3>Patient Information</h3>
+//             <table class="table table-bordered">
+//                 <tr>
+//                     <th>Patient ID</th>
+//                     <td>${edf.local_patient_id || 'N/A'}</td>
+//                 </tr>
+//                 <tr>
+//                     <th>Recording ID</th>
+//                     <td>${edf.local_recording_id || 'N/A'}</td>
+//                 </tr>
+//                 <tr>
+//                     <th>Start Date/Time</th>
+//                     <td>${edf.date_time ? edf.date_time.format("YYYY-MM-DD HH:mm:ss") : 'N/A'}</td>
+//                 </tr>
+//                 <tr>
+//                     <th>Duration</th>
+//                     <td>${edf.file_duration ? formatDuration(edf.file_duration) : 'N/A'}</td>
+//                 </tr>
+//             </table>
+            
+//             <h3>Recording Details</h3>
+//             <table class="table table-bordered">
+//                 <tr>
+//                     <th>Number of Channels</th>
+//                     <td>${edf.channels_count || 'N/A'}</td>
+//                 </tr>
+//                 <tr>
+//                     <th>Current View</th>
+//                     <td>${$('#windowduratin').data("window_duration") || 'N/A'} second window at ${edf.t_beg || 0} seconds</td>
+//                 </tr>
+//             </table>
+            
+//             <h3>Montage Information</h3>
+//             <p>Current montage: ${$('#montage').data('montageCode') || 'N/A'}</p>
+            
+//             <h3>Findings</h3>
+//             <p>This is a sample report with dummy findings. In a real implementation, this would contain actual analysis results.</p>
+//             <ul>
+//                 <li>Sample finding 1: Normal background activity</li>
+//                 <li>Sample finding 2: No epileptiform discharges noted</li>
+//                 <li>Sample finding 3: Symmetric waveforms</li>
+//             </ul>
+            
+//             <h3>Impression</h3>
+//             <p>Normal EEG study. No epileptiform activity detected in this sample.</p>
+            
+//             <p style="font-style: italic; margin-top: 30px;">Report generated on ${new Date().toLocaleString()}</p>
+//         </div>
+//     `;
+    
+//     // Display in modal
+//     $('#reportContent').html(reportHTML);
+//     $('#reportModal').modal('show');
+// }
+
+// Modified version that simply displays the HTML returned by the API
+async function generateReport() {
+    try {
+        $("#loadingIndicator").show();
+        $("body").css("cursor", "progress");
+        
+        const formData = new FormData();
+        formData.append('file', currentUploadedFile);
+        
+        const response = await fetch('http://localhost:5000/generate-eeg-report', {
+            method: 'POST',
+            body: formData,
+            mode: 'cors'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        // PARSE THE JSON RESPONSE FIRST
+        const result = await response.json();
+        
+        // Then use the report_html property
+        console.log("Report HTML:", result.report_html);
+        $('#reportContent').html(result.report_html);
+        $('#reportModal').modal('show');
+        
+    } catch (error) {
+        console.error('Error generating report:', error);
+        $('#reportContent').html(`
+            <div class="alert alert-danger">
+                <h4>Error Generating Report</h4>
+                <p>${error.message}</p>
+                <p>Showing basic file information instead.</p>
+            </div>
+            ${generateBasicFileInfo()}
+        `);
+        $('#reportModal').modal('show');
+    } finally {
+        $("#loadingIndicator").hide();
+        $("body").css("cursor", "default");
+    }
+}
+
+// Simple fallback that shows basic file info
+function generateBasicFileInfo() {
+    return `
+        <div style="font-family: Arial, sans-serif;">
+            <h3>File Information</h3>
+            <table class="table table-bordered">
+                <tr>
+                    <th>Patient ID</th>
+                    <td>${edf.local_patient_id || 'N/A'}</td>
+                </tr>
+                <tr>
+                    <th>Recording ID</th>
+                    <td>${edf.local_recording_id || 'N/A'}</td>
+                </tr>
+                <tr>
+                    <th>Start Date/Time</th>
+                    <td>${edf.date_time ? edf.date_time.format("YYYY-MM-DD HH:mm:ss") : 'N/A'}</td>
+                </tr>
+                <tr>
+                    <th>Duration</th>
+                    <td>${edf.file_duration ? formatDuration(edf.file_duration) : 'N/A'}</td>
+                </tr>
+                <tr>
+                    <th>Channels</th>
+                    <td>${edf.channels_count || 'N/A'}</td>
+                </tr>
+            </table>
+            <p style="font-style: italic; margin-top: 30px;">
+                Report generated on ${new Date().toLocaleString()}
+            </p>
+        </div>
+    `;
+}
+
+$('#downloadReportBtn').click(function() {
+    downloadPDFReport();
+});
+
+// function downloadPDFReport() {
+//     // Create a new jsPDF instance
+//     const doc = new window.jspdf.jsPDF();
+    
+//     // Add title
+//     doc.setFontSize(18);
+//     doc.setTextColor(40, 53, 147);
+//     doc.text('EEG Analysis Report', 105, 20, { align: 'center' });
+    
+//     // Add patient information
+//     doc.setFontSize(12);
+//     doc.setTextColor(0, 0, 0);
+//     doc.text('Patient Information', 14, 30);
+    
+//     // Patient info table
+//     doc.autoTable({
+//         startY: 35,
+//         head: [['Field', 'Value']],
+//         body: [
+//             ['Patient ID', edf.local_patient_id || 'N/A'],
+//             ['Recording ID', edf.local_recording_id || 'N/A'],
+//             ['Start Date/Time', edf.date_time ? edf.date_time.format("YYYY-MM-DD HH:mm:ss") : 'N/A'],
+//             ['Duration', edf.file_duration ? formatDuration(edf.file_duration) : 'N/A']
+//         ],
+//         theme: 'grid',
+//         headStyles: { fillColor: [51, 122, 183] }
+//     });
+    
+//     // Recording details
+//     doc.text('Recording Details', 14, doc.autoTable.previous.finalY + 15);
+//     doc.autoTable({
+//         startY: doc.autoTable.previous.finalY + 20,
+//         head: [['Field', 'Value']],
+//         body: [
+//             ['Number of Channels', edf.channels_count || 'N/A'],
+//             ['Current View', `${$('#windowduratin').data("window_duration") || 'N/A'} second window at ${edf.t_beg || 0} seconds`]
+//         ],
+//         theme: 'grid',
+//         headStyles: { fillColor: [51, 122, 183] }
+//     });
+    
+//     // Montage info
+//     doc.text('Montage Information', 14, doc.autoTable.previous.finalY + 15);
+//     doc.text(`Current montage: ${$('#montage').data('montageCode') || 'N/A'}`, 14, doc.autoTable.previous.finalY + 25);
+    
+//     // Findings
+//     doc.text('Findings', 14, doc.autoTable.previous.finalY + 35);
+//     doc.setFontSize(10);
+//     doc.text('This is a sample report with dummy findings. In a real implementation, this would contain actual analysis results.', 14, doc.autoTable.previous.finalY + 45, { maxWidth: 180 });
+    
+//     // Findings list
+//     const findings = [
+//         'Sample finding 1: Normal background activity',
+//         'Sample finding 2: No epileptiform discharges noted',
+//         'Sample finding 3: Symmetric waveforms'
+//     ];
+    
+//     let findingsY = doc.autoTable.previous.finalY + 55;
+//     findings.forEach(finding => {
+//         doc.text('- ' + finding, 16, findingsY, { maxWidth: 180 });
+//         findingsY += 7;
+//     });
+    
+//     // Impression
+//     doc.setFontSize(12);
+//     doc.text('Impression', 14, findingsY + 10);
+//     doc.setFontSize(10);
+//     doc.text('Normal EEG study. No epileptiform activity detected in this sample.', 14, findingsY + 20, { maxWidth: 180 });
+    
+//     // Footer
+//     doc.setFontSize(8);
+//     doc.setFontStyle('italic');
+//     doc.text(`Report generated on ${new Date().toLocaleString()}`, 14, 280);
+    
+//     // Save the PDF
+//     doc.save(`EEG_Report_${edf.local_patient_id || 'unknown'}_${new Date().toISOString().slice(0,10)}.pdf`);
+// }
+
+
+// function downloadPDFReport() {
+//     try {
+//         // Initialize jsPDF
+//         const doc = new window.jspdf.jsPDF();
+        
+//         // Set document properties
+//         doc.setProperties({
+//             title: 'EEG Analysis Report',
+//             subject: 'EEG Recording Analysis',
+//             author: 'EEG Viewer',
+//             keywords: 'eeg, report, medical',
+//             creator: 'EEG Viewer'
+//         });
+
+//         // Add title
+//         doc.setFontSize(18);
+//         doc.setTextColor(40, 53, 147);
+//         doc.text('EEG Analysis Report', 105, 20, { align: 'center' });
+        
+//         // Add patient information
+//         doc.setFontSize(12);
+//         doc.setTextColor(0, 0, 0);
+//         doc.text('Patient Information', 14, 30);
+        
+//         // Patient info table
+//         doc.autoTable({
+//             startY: 35,
+//             head: [['Field', 'Value']],
+//             body: [
+//                 ['Patient ID', edf.local_patient_id || 'N/A'],
+//                 ['Recording ID', edf.local_recording_id || 'N/A'],
+//                 ['Start Date/Time', edf.date_time ? edf.date_time.format("YYYY-MM-DD HH:mm:ss") : 'N/A'],
+//                 ['Duration', edf.file_duration ? formatDuration(edf.file_duration) : 'N/A']
+//             ],
+//             theme: 'grid',
+//             headStyles: { 
+//                 fillColor: [51, 122, 183],
+//                 textColor: [255, 255, 255],
+//                 fontStyle: 'bold'
+//             }
+//         });
+        
+//         // Recording details
+//         doc.text('Recording Details', 14, doc.lastAutoTable.finalY + 15);
+//         doc.autoTable({
+//             startY: doc.lastAutoTable.finalY + 20,
+//             head: [['Field', 'Value']],
+//             body: [
+//                 ['Number of Channels', edf.channels_count || 'N/A'],
+//                 ['Current View', `${$('#windowduratin').data("window_duration") || 'N/A'} second window at ${edf.t_beg || 0} seconds`]
+//             ],
+//             theme: 'grid',
+//             headStyles: { 
+//                 fillColor: [51, 122, 183],
+//                 textColor: [255, 255, 255],
+//                 fontStyle: 'bold'
+//             }
+//         });
+        
+//         // Montage info
+//         doc.text('Montage Information', 14, doc.lastAutoTable.finalY + 15);
+//         doc.text(`Current montage: ${$('#montage').data('montageCode') || 'N/A'}`, 14, doc.lastAutoTable.finalY + 25);
+        
+//         // Findings
+//         doc.text('Findings', 14, doc.lastAutoTable.finalY + 35);
+//         doc.setFontSize(10);
+//         const findingsText = 'This is a sample report with dummy findings. In a real implementation, this would contain actual analysis results.';
+//         doc.text(findingsText, 14, doc.lastAutoTable.finalY + 45, { maxWidth: 180 });
+        
+//         // Findings list
+//         const findings = [
+//             'Sample finding 1: Normal background activity',
+//             'Sample finding 2: No epileptiform discharges noted',
+//             'Sample finding 3: Symmetric waveforms'
+//         ];
+        
+//         let findingsY = doc.lastAutoTable.finalY + 55;
+//         findings.forEach(finding => {
+//             doc.text('- ' + finding, 16, findingsY, { maxWidth: 180 });
+//             findingsY += 7;
+//         });
+        
+//         // Impression
+//         doc.setFontSize(12);
+//         doc.text('Impression', 14, findingsY + 10);
+//         doc.setFontSize(10);
+//         doc.text('Normal EEG study. No epileptiform activity detected in this sample.', 14, findingsY + 20, { maxWidth: 180 });
+        
+//         // Footer
+//         doc.setFontSize(8);
+//         doc.setFont('helvetica', 'italic');
+//         doc.text(`Report generated on ${new Date().toLocaleString()}`, 14, 280);
+        
+//         // Save the PDF
+//         doc.save(`EEG_Report_${edf.local_patient_id || 'unknown'}_${new Date().toISOString().slice(0,10)}.pdf`);
+        
+//     } catch (error) {
+//         console.error('Error generating PDF:', error);
+//         alert('Error generating PDF report. Please check console for details.');
+//     }
+// }
+
+function downloadPDFReport() {
+    try {
+        // Get the HTML content that was already displayed in the modal
+        const reportHTML = $('#reportContent').html();
+        
+        // Check if we have API-generated content or fallback content
+        if (!reportHTML || reportHTML.includes('Error Generating Report')) {
+            // If no API content exists, fall back to the original PDF generation
+            return generateBasicPDF();
+        }
+        
+        // Initialize jsPDF
+        const doc = new window.jspdf.jsPDF();
+        
+        // Set document properties
+        doc.setProperties({
+            title: 'EEG Analysis Report',
+            subject: 'EEG Recording Analysis',
+            author: 'EEG Viewer',
+            keywords: 'eeg, report, medical',
+            creator: 'EEG Viewer'
+        });
+
+        // Convert HTML to PDF
+        doc.html(reportHTML, {
+            callback: function(doc) {
+                // Save the PDF
+                doc.save(`EEG_Report_${edf.local_patient_id || 'unknown'}_${new Date().toISOString().slice(0,10)}.pdf`);
+            },
+            x: 15,
+            y: 15,
+            width: 180, // target width in the PDF
+            windowWidth: 800 // window width in CSS pixels
+        });
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        
+        // Fallback to basic PDF generation if HTML conversion fails
+        try {
+            generateBasicPDF();
+        } catch (fallbackError) {
+            alert('Error generating PDF report. Please check console for details.');
+        }
+    }
+}
+
+// Fallback PDF generation (original content)
+function generateBasicPDF() {
+    const doc = new window.jspdf.jsPDF();
+    
+    // Set document properties
+    doc.setProperties({
+        title: 'EEG Analysis Report',
+        subject: 'EEG Recording Analysis',
+        author: 'EEG Viewer',
+        keywords: 'eeg, report, medical',
+        creator: 'EEG Viewer'
+    });
+
+    // Add title
+    doc.setFontSize(18);
+    doc.setTextColor(40, 53, 147);
+    doc.text('EEG Analysis Report', 105, 20, { align: 'center' });
+    
+    // Add patient information
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Patient Information', 14, 30);
+    
+    // Patient info table
+    doc.autoTable({
+        startY: 35,
+        head: [['Field', 'Value']],
+        body: [
+            ['Patient ID', edf.local_patient_id || 'N/A'],
+            ['Recording ID', edf.local_recording_id || 'N/A'],
+            ['Start Date/Time', edf.date_time ? edf.date_time.format("YYYY-MM-DD HH:mm:ss") : 'N/A'],
+            ['Duration', edf.file_duration ? formatDuration(edf.file_duration) : 'N/A']
+        ],
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [51, 122, 183],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        }
+    });
+    
+    // Continue with the rest of the original PDF content...
+    // [Rest of your original PDF generation code]
+    
+    doc.save(`EEG_Report_${edf.local_patient_id || 'unknown'}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${hours}h ${minutes}m ${secs}s`;
 }
 
 // Function to process file for display (unchanged)

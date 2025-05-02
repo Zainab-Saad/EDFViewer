@@ -34,10 +34,15 @@
                              
 
                              <!-- Prediction Button (initially hidden) -->
-                              <button id="predictionButton" style="display: none; margin-top: 10px;" 
+                              <button id="predictionButton" style="display: none; margin-left: 10px; margin-right: 10px" class="btn btn-primary" 
                               onclick="getModelPrediction()">
                               Get Model Prediction
                               </button>
+
+                              <button id="generateReportBtn" class="btn btn-primary" style="display: none; margin-left: 10px; margin-right: 10px">
+                                 <i class="glyphicon glyphicon-file"></i> Generate Report
+                             </button>
+                             
 
                               <!-- Prediction Popup -->
                               <div id="predictionPopup" style="display: none; position: fixed; top: 50%; left: 50%; 
@@ -572,12 +577,38 @@
                </div>
             </div>
          </div>
+
+         <div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-labelledby="reportModalLabel">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="reportModalLabel">EEG Analysis Report</h4>
+                    </div>
+                    <div class="modal-body" id="reportContent">
+                        <!-- Report content will be generated here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="downloadReportBtn">
+                            <i class="glyphicon glyphicon-download"></i> Download Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
       <script type="text/javascript"  src="assets/js/jquery.js"></script>
       <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
       <script type="text/javascript" src='assets/js/moment.min.js'></script>
       <script type="text/javascript" src="assets/js/plotly.min.js"></script>
       <script type="text/javascript" src="assets/js/CaseEEGFilter.js"></script>
       <script type="text/javascript" src="assets/js/app.js"></script>
+
    </body>
 </html>
