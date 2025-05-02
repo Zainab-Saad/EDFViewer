@@ -10,7 +10,9 @@ $('.window10s').data('windowduration', 10);
 $('.window15s').data('windowduration', 15);
 $('.window30s').data('windowduration', 30);
 $('.window60s').data('windowduration', 60);
-$('#windowduratin').data('window_duration', 7);
+$('#windowduratin').data('window_duration', 3);
+$('.window3s').prop("checked", true);
+$('#wd').text('3s ');
 $("#channel_labels_one").data('chlist', []);
 $("#montage_EEG_list").data('montage', []);
 $("#montage_EKG_list").data('montage', []);
@@ -27,9 +29,16 @@ $('.amp20s').data('amplitudeCalibration', 20);
 $('.amp30s').data('amplitudeCalibration', 30);
 $('.amp50s').data('amplitudeCalibration', 50);
 $('.amp100s').data('amplitudeCalibration', 100);
-$('#amp').data('amplitudeCalibration', 5);
+$('#amp').data('amplitudeCalibration', 100); // Set default to 100 µV
+$('#ampNumber').text('100 µV '); // Update the display text
+$('.amp100s').prop("checked", true); // Check the 100µV radio button
+
+// $('#amp').data('amplitudeCalibration', 5);
 $('#GO').data('tab', 1);
 $('#montage').data('montageCode', 'm6');
+$('.Montage6').prop("checked", true);
+$('#general_montage_num').text('6');
+$('#montage_modal_txt').text(' Montage 6');
 $('.Montage1').data('montageNum', 1);
 $('.Montage2').data('montageNum', 2);
 $('.Montage3').data('montageNum', 3);
@@ -41,6 +50,7 @@ $('#Annotaion_Table_Head_0').data('col', 0);
 $('#Annotaion_Table_Head_1').data('col', 1);
 $('#annotaionsTableScrol').css('height', ($(window).height() - 222));
 $('#setting_CNW_slider').data('position', 0);
+// $('.Montage6').prop("checked", true);
 var ch_dic = {};
 var edf = {};
 
