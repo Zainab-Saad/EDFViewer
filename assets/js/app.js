@@ -1015,7 +1015,7 @@ async function generateReport() {
         const formData = new FormData();
         formData.append('file', currentUploadedFile);
         
-        const response = await fetch('http://localhost:5000/generate-eeg-report', {
+        const response = await fetch('http://localhost:5000/generate-eeg-report-vlm', {
             method: 'POST',
             body: formData,
             mode: 'cors'
